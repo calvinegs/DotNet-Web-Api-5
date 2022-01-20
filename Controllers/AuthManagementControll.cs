@@ -1,8 +1,15 @@
+using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Todo5.Helpers;
 using Todo5.Models;
 
 namespace Todo5.Controllers
@@ -12,16 +19,14 @@ namespace Todo5.Controllers
     public class AuthManagementController : ControllerBase
     {
         private readonly UserManager<IdentityUser> _userManager;
-        // private readonly AppSettings _appSettings;
+        private readonly AppSettings _appSettings;
 
         public AuthManagementController(
-            UserManager<IdentityUser> userManager)
-        // public AuthManagementController(
-        //     UserManager<IdentityUser> userManager,
-        //     IOptionsMonitor<AppSettings> optionsMonitor)
+            UserManager<IdentityUser> userManager,
+            IOptionsMonitor<AppSettings> optionsMonitor)
         {
             _userManager = userManager;
-            // _appSettings = optionsMonitor.CurrentValue;
+            _appSettings = optionsMonitor.CurrentValue;
         }
 
         [HttpPost]
@@ -48,12 +53,12 @@ namespace Todo5.Controllers
                 var isCreated = await _userManager.CreateAsync(newUser, user.Password);
                 if (isCreated.Succeeded)
                 {
-                    // var jwtToken = GenerateJwtToken(newUser);
+                    var jwtToken = GenerateJwtToken(newUser);
 
                     return Ok(new RegistrationResponse()
                     {
                         Success = true,
-                        // Token = jwtToken
+                        Token = jwtToken
                     });
                 }
                 else
@@ -107,12 +112,12 @@ namespace Todo5.Controllers
                     });
                 }
 
-                // var jwtToken = GenerateJwtToken(existingUser);
+                var jwtToken = GenerateJwtToken(existingUser);
 
                 return Ok(new RegistrationResponse()
                 {
                     Success = true,
-                    // Token = jwtToken
+                    Token = jwtToken
                 });
             }
 
@@ -125,38 +130,38 @@ namespace Todo5.Controllers
             });
         }
 
-        /*         private string GenerateJwtToken(IdentityUser user)
-                {
-                    var jwtTokenHandler = new JwtSecurityTokenHandler();
+        private string GenerateJwtToken(IdentityUser user)
+        {
+            var jwtTokenHandler = new JwtSecurityTokenHandler();
 
-                    var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+            var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
 
-                    var claims = new ClaimsIdentity(new[]
-                    {
-                        new Claim("Id", user.Id),
-                        new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                        new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-                    });
+            var claims = new ClaimsIdentity(new[]
+            {
+                new Claim("Id", user.Id),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            });
 
-                    var tokenDescriptor = new SecurityTokenDescriptor
-                    {
-                        // Subject = new ClaimsIdentity(new []
-                        // {
-                        //     new Claim("Id", user.Id), 
-                        //     new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                        //     new Claim(JwtRegisteredClaimNames.Sub, user.Email),
-                        //     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-                        // }),
-                        Subject = claims,
-                        Expires = DateTime.UtcNow.AddHours(6),
-                        SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-                    };
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                // Subject = new ClaimsIdentity(new []
+                // {
+                //     new Claim("Id", user.Id), 
+                //     new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                //     new Claim(JwtRegisteredClaimNames.Sub, user.Email),
+                //     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                // }),
+                Subject = claims,
+                Expires = DateTime.UtcNow.AddHours(6),
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
 
-                    var token = jwtTokenHandler.CreateToken(tokenDescriptor);
-                    var jwtToken = jwtTokenHandler.WriteToken(token);
+            var token = jwtTokenHandler.CreateToken(tokenDescriptor);
+            var jwtToken = jwtTokenHandler.WriteToken(token);
 
-                    return jwtToken;
-                } */
+            return jwtToken;
+        }
     }
 }
